@@ -32,32 +32,44 @@ An intelligent developer dashboard and personal branding platform that visualize
 * Python 3.10+
 * Git
 
-### Installation & Execution
-1. **Activate the virtual environment**:
-   ```powershell
-   .\venv\Scripts\Activate.ps1
+### Installation & Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/AmiSouhardyo/DevVibe.git
+   cd DevVibe
    ```
-2. **Install dependencies**:
-   ```powershell
+
+2. **Create and activate a virtual environment**:
+   * **Windows (PowerShell)**:
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\Activate.ps1
+     ```
+   * **macOS / Linux**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+
+3. **Install dependencies**:
+   ```bash
    pip install -r requirements.txt
    ```
-3. **Run the FastAPI server**:
-   ```powershell
+
+4. **(Optional) Configure GitHub Personal Access Token**:
+   * Create a `.env` file in the project root:
+     ```env
+     GITHUB_TOKEN=your_github_token_here
+     CACHE_EXPIRY_MINUTES=60
+     ```
+   * *Note: If no token is provided, the application operates in public rate-limit mode and utilizes local SQLite caching with built-in fallback profiles so all features remain fully testable.*
+
+5. **Start the FastAPI backend server**:
+   ```bash
    python -m uvicorn backend.main:app --reload --port 8000
    ```
-4. **Open the Dashboard**:
-   Visit [http://localhost:8000](http://localhost:8000) in your web browser.
 
----
+6. **Open the Dashboard**:
+   Open [http://localhost:8000](http://localhost:8000) in your web browser.
 
-## 🔑 GitHub API Token & Rate Limits
-
-GitHub imposes a rate limit of **60 unauthenticated requests/hour** per IP address.
-To increase your rate limit to **5,000 requests/hour**:
-1. Generate a Personal Access Token (classic or fine-grained) at [GitHub Token Settings](https://github.com/settings/tokens). No special permissions/scopes are required for public repositories.
-2. Create a `.env` file in the root directory:
-   ```env
-   GITHUB_TOKEN=ghp_your_personal_access_token_here
-   CACHE_EXPIRY_MINUTES=60
-   ```
-3. Restart the server. The application will automatically use authenticated requests and seamlessly cache all data in SQLite.
