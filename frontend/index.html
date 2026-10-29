@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevVibe | GitHub Developer Portfolio & Tech Stack Analyzer</title>
+    <meta name="description" content="Professional developer dashboard visualizing GitHub activity, repository analytics, coding streaks, and AI-driven tech stack compatibility.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Dev<strong>Vibe</strong></span>
+                <span class="badge-tag">Portfolio Pro</span>
+            </div>
+            
+            <!-- Profile Search / Ingestion Bar -->
+            <form id="search-form" class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="username-input" placeholder="Enter GitHub username (e.g. torvalds, gaearon)..." required autocomplete="off" spellcheck="false">
+                <button type="submit" id="search-btn" class="btn btn-primary">
+                    <span class="btn-text">Load Profile</span>
+                    <span class="btn-spinner" style="display: none;"></span>
+                </button>
+                <button type="button" id="refresh-btn" class="btn btn-ghost" title="Force refresh cache from GitHub">
+                    🔄 Sync
+                </button>
+            </form>
+            
+            <div class="nav-actions">
+                <button id="vibe-toggle-btn" class="btn btn-accent">
+                    🎯 Vibe Check
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <!-- Notification / Warning Banner (e.g., Cache info, Rate Limit info) -->
+        <div id="status-banner" class="status-banner" style="display: none;">
+            <span id="status-message"></span>
+            <button id="close-banner" class="banner-close">&times;</button>
+        </div>
+
+        <!-- The Vibe Check Top Compatibility Badge -->
+        <section id="vibe-badge-container" class="vibe-badge-section" style="display: none;">
+            <div class="vibe-badge-card">
+                <div class="badge-left">
+                    <div class="badge-pill" id="vibe-badge-pill">
+                        <span id="vibe-pill-score">0%</span> Match
+                    </div>
+                    <div>
+                        <h3 id="vibe-badge-title">Tech Stack Compatibility</h3>
+                        <p id="vibe-badge-subtitle">Compared against pasted Job Description</p>
+                    </div>
+                </div>
+                <div class="badge-right">
+                    <div class="skills-matched-preview" id="matched-skills-preview"></div>
+                    <button id="open-vibe-modal-btn" class="btn btn-sm btn-outline">Edit JD / View Analysis</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Header Section -->
+        <section id="profile-section" class="profile-section glass-card" style="display: none;">
+            <div class="profile-grid">
+                <!-- User Info & Avatar -->
+                <div class="profile-identity">
+                    <div class="avatar-wrapper">
+                        <img id="user-avatar" src="" alt="Avatar" class="avatar-img">
+                        <div class="online-indicator" title="Active on GitHub"></div>
+                    </div>
+                    <div class="identity-info">
+                        <div class="name-container">
+                            <h1 id="user-name">Developer Name</h1>
+                            <a id="user-github-link" href="#" target="_blank" class="github-handle">@username ↗</a>
+                        </div>
+                        <p id="user-bio" class="user-bio">Bio description will appear here...</p>
+                        
+                        <div class="meta-row">
+                            <span id="meta-company" class="meta-item" style="display: none;">🏢 <span class="val"></span></span>
+                            <span id="meta-location" class="meta-item" style="display: none;">📍 <span class="val"></span></span>
+                            <span id="meta-blog" class="meta-item" style="display: none;">🔗 <a href="#" target="_blank" class="val"></a></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics & Stats Counter -->
+                <div class="metrics-grid">
+                    <div class="stat-card">
+                        <span class="stat-icon">⭐</span>
+                        <div class="stat-details">
+                            <span class="stat-val" id="stat-total-stars">0</span>
+                            <span class="stat-label">Total Stars</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon">🍴</span>
+                        <div class="stat-details">
+                            <span class="stat-val" id="stat-total-forks">0</span>
+                            <span class="stat-label">Total Forks</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon">👥</span>
+                        <div class="stat-details">
+                            <span class="stat-val" id="stat-followers">0</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon">📦</span>
+                        <div class="stat-details">
+                            <span class="stat-val" id="stat-public-repos">0</span>
+                            <span class="stat-label">Repositories</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Languages Pie Chart -->
+                <div class="chart-container">
+                    <h3 class="chart-title">Top Languages</h3>
+                    <div class="canvas-wrapper">
+                        <canvas id="languages-chart"></canvas>
+                    </div>
+                    <div id="chart-legend" class="chart-custom-legend"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Coding Streaks & Contribution Heatmap Grid -->
+        <section id="contributions-section" class="contributions-section glass-card" style="display: none;">
+            <div class="section-header">
+                <div>
+                    <h2>Coding Activity & Streaks</h2>
+                    <p class="section-subtitle">Visual heatmap of daily contributions over the past year</p>
+                </div>
+                <div class="streak-badges">
+                    <div class="streak-pill">
+                        <span class="streak-fire">🔥</span>
+                        <div>
+                            <span class="streak-number" id="current-streak-val">0</span>
+                            <span class="streak-label">Days Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="streak-pill">
+                        <span class="streak-fire">⚡</span>
+                        <div>
+                            <span class="streak-number" id="longest-streak-val">0</span>
+                            <span class="streak-label">Days Longest Streak</span>
+                        </div>
+                    </div>
+                    <div class="streak-pill">
+                        <span class="streak-fire">📈</span>
+                        <div>
+                            <span class="streak-number" id="total-contributions-val">0</span>
+                            <span class="streak-label">Total Contributions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap Container -->
+            <div class="heatmap-wrapper">
+                <div class="heatmap-months" id="heatmap-months"></div>
+                <div class="heatmap-grid" id="heatmap-grid"></div>
+                <div class="heatmap-footer">
+                    <span>Less</span>
+                    <div class="legend-scale">
+                        <span class="legend-cell level-0"></span>
+                        <span class="legend-cell level-1"></span>
+                        <span class="legend-cell level-2"></span>
+                        <span class="legend-cell level-3"></span>
+                        <span class="legend-cell level-4"></span>
+                    </div>
+                    <span>More</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Repository Cards Showcase -->
+        <section id="repos-section" class="repos-section" style="display: none;">
+            <div class="section-header">
+                <div>
+                    <h2>Showcase Repositories</h2>
+                    <p class="section-subtitle">Ranked by star count, forks, and technological focus</p>
+                </div>
+                <div class="filter-controls">
+                    <input type="text" id="repo-filter-input" placeholder="Filter repositories..." class="filter-input">
+                </div>
+            </div>
+            
+            <div class="repo-grid" id="repo-grid"></div>
+        </section>
+
+        <!-- Welcome Placeholder (shown before searching) -->
+        <section id="empty-state" class="empty-state glass-card">
+            <div class="empty-content">
+                <div class="empty-icon">🚀</div>
+                <h2>Explore Any GitHub Developer Portfolio</h2>
+                <p>Enter a GitHub username above to visualize their contributions, language breakdown, repository metrics, and test Job Description compatibility.</p>
+                <div class="sample-chips">
+                    <span>Try popular developers:</span>
+                    <button class="chip-btn" data-user="torvalds">@torvalds</button>
+                    <button class="chip-btn" data-user="gaearon">@gaearon</button>
+                    <button class="chip-btn" data-user="tiangolo">@tiangolo</button>
+                    <button class="chip-btn" data-user="karpathy">@karpathy</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal 1: The Vibe Check Job Description Analyzer -->
+    <div id="vibe-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card glass-modal">
+            <div class="modal-header">
+                <div>
+                    <h3>🎯 The Vibe Check: Tech Stack Compatibility</h3>
+                    <p class="modal-subtitle">Paste a Job Description to compare required skills against this developer's cached repositories.</p>
+                </div>
+                <button id="close-vibe-modal" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="jd-input-wrapper">
+                    <label for="jd-textarea">Job Description Requirements:</label>
+                    <textarea id="jd-textarea" rows="6" placeholder="Paste the job description or required tech stack here (e.g., 'We are looking for a Senior Backend Engineer proficient in Python, FastAPI, Docker, PostgreSQL, and AWS...')."></textarea>
+                    <button id="run-vibe-check-btn" class="btn btn-primary btn-block">Calculate Compatibility Score</button>
+                </div>
+
+                <div id="vibe-results-panel" class="vibe-results" style="display: none;">
+                    <div class="score-display">
+                        <div class="score-circle" id="score-circle">
+                            <span class="score-number" id="vibe-calc-percent">0%</span>
+                            <span class="score-tag" id="vibe-calc-badge">Evaluating</span>
+                        </div>
+                        <div class="score-summary">
+                            <h4 id="vibe-calc-summary-title">Synergy Analysis</h4>
+                            <p id="vibe-calc-recommendation">Recommendation text will appear here.</p>
+                        </div>
+                    </div>
+
+                    <div class="skills-breakdown">
+                        <div class="skill-category">
+                            <h5>✅ Matched Demonstrated Technologies (<span id="matched-count">0</span>)</h5>
+                            <div id="matched-chips-container" class="chips-container"></div>
+                        </div>
+                        <div class="skill-category">
+                            <h5>⚠️ Unmatched / Additional JD Requirements (<span id="missing-count">0</span>)</h5>
+                            <div id="missing-chips-container" class="chips-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Chatbot Widget Button -->
+    <button id="chatbot-toggle-btn" class="floating-chat-btn" title="Chat with AI Recruiter Assistant">
+        <span class="chat-icon">💬</span>
+        <span class="chat-label">Ask Recruiter AI</span>
+    </button>
+
+    <!-- Floating Chatbot Window (The 2 Extra Chatbot Features) -->
+    <div id="chatbot-window" class="chat-window glass-card" style="display: none;">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <span class="bot-avatar">🤖</span>
+                <div>
+                    <h4>DevVibe Assistant</h4>
+                    <span class="chat-status">● Ready for questions</span>
+                </div>
+            </div>
+            <button id="close-chat-btn" class="chat-close-btn">&times;</button>
+        </div>
+
+        <!-- Chat Tabs (Feature 1 vs Feature 2) -->
+        <div class="chat-tabs">
+            <button class="chat-tab-btn active" data-tab="ask-codebase">📂 Ask Codebase</button>
+            <button class="chat-tab-btn" data-tab="mock-interview">🎯 Mock Interview</button>
+        </div>
+
+        <!-- Tab 1: Ask Codebase -->
+        <div id="tab-ask-codebase" class="tab-pane active">
+            <div class="chat-messages" id="chat-messages-container">
+                <div class="chat-msg bot">
+                    Hello! I'm the developer's AI portfolio agent. Ask me anything about their top repositories, technical specialties, or architectural skills!
+                </div>
+            </div>
+            
+            <div class="prompt-chips" id="quick-prompts">
+                <button class="p-chip">⭐ Top projects?</button>
+                <button class="p-chip">🛠️ What tech stack?</button>
+                <button class="p-chip">📦 Python experience?</button>
+            </div>
+
+            <form id="chat-input-form" class="chat-input-area">
+                <input type="text" id="chat-user-input" placeholder="Ask a question about this developer..." autocomplete="off">
+                <button type="submit" class="btn btn-send">➤</button>
+            </form>
+        </div>
+
+        <!-- Tab 2: AI Mock Technical Interviewer -->
+        <div id="tab-mock-interview" class="tab-pane" style="display: none;">
+            <div class="interview-pane-content">
+                <p class="interview-intro">Generate targeted interview questions and skill gap assessments based on the uploaded Job Description and developer repositories.</p>
+                <button id="generate-interview-btn" class="btn btn-primary btn-block">Generate Tailored Interview Questions</button>
+                
+                <div id="interview-output" class="interview-output" style="display: none;">
+                    <div id="interview-questions-list"></div>
+                    <div class="interview-coaching-box" id="interview-coaching-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip for Heatmap Cells -->
+    <div id="heatmap-tooltip" class="heatmap-tooltip" style="display: none;"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
